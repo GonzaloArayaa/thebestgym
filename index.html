@@ -1,0 +1,2810 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>The Best Gym - Sistema de Gestión</title>
+        <link rel="stylesheet" href="styles.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+        <style>
+            /* Estilos adicionales para el logo */
+            .logo-circle {
+                background: var(--primary-color);
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 20px;
+                padding: 15px;
+                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            }
+
+            .logo-circle img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Pantalla de Login -->
+        <div id="loginScreen" class="login-container">
+            <div class="login-box">
+                <div class="login-header">
+                    <div class="logo-circle">
+                        <img src="icons/gym.png" alt="The Best Gym Logo" />
+                    </div>
+                    <h1>The Best Gym</h1>
+                    <p>Sistema de Gestión</p>
+                </div>
+
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label>Usuario</label>
+                        <input
+                            type="text"
+                            id="username"
+                            placeholder="Ingrese su usuario"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Contraseña</label>
+                        <input
+                            type="password"
+                            id="password"
+                            placeholder="Ingrese su contraseña"
+                            required
+                        />
+                    </div>
+
+                    <div
+                        id="loginError"
+                        class="error-message"
+                        style="display: none"
+                    >
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Credenciales incorrectas</span>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Iniciar Sesión
+                    </button>
+                </form>
+
+                <div class="login-info">
+                    <p><strong>Usuarios de prueba:</strong></p>
+                    <p>Las credenciales se configuran al instalar la base de datos.</p>
+                </div>
+            </div>
+        </div>
+        <!-- Sistema Principal -->
+        <div id="mainSystem" class="main-system" style="display: none">
+            <aside id="sidebar" class="sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-brand">
+                        <h1>The Best Gym</h1>
+                        <p id="userRole"></p>
+                    </div>
+                    <button id="toggleSidebar" class="btn-icon">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+                <nav class="sidebar-nav" id="sidebarNav"></nav>
+                <div class="sidebar-footer">
+                    <button id="logoutBtn" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Cerrar Sesión</span>
+                    </button>
+                </div>
+            </aside>
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Header -->
+                <header class="header">
+                    <div class="header-left">
+                        <h2 id="welcomeText">Bienvenido</h2>
+                        <p id="currentDate"></p>
+                    </div>
+                    <div class="header-right">
+                        <button
+                            class="btn-icon"
+                            onclick="abrirPanelNotificaciones()"
+                            title="Gestión de Notificaciones"
+                        >
+                            <i class="fas fa-bell"></i>
+                            <span
+                                class="notification-badge"
+                                id="badgeNotificaciones"
+                                >0</span
+                            >
+                        </button>
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                </header>
+                <!-- Content Area -->
+                <main class="content-area" id="contentArea">
+                    <!-- Dashboard Module -->
+                    <div id="dashboardModule" class="module">
+                        <h2 class="module-title">Panel de Control</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card card-blue">
+                                <div class="stat-content">
+                                    <div class="stat-info">
+                                        <p class="stat-label">Socios Activos</p>
+                                        <p
+                                            class="stat-value"
+                                            id="sociosActivos"
+                                        >
+                                            0
+                                        </p>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card card-red">
+                                <div class="stat-content">
+                                    <div class="stat-info">
+                                        <p class="stat-label">Morosos</p>
+                                        <p
+                                            class="stat-value"
+                                            id="sociosMorosos"
+                                        >
+                                            0
+                                        </p>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i
+                                            class="fas fa-exclamation-circle"
+                                        ></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card card-green">
+                                <div class="stat-content">
+                                    <div class="stat-info">
+                                        <p class="stat-label">
+                                            Asistencias Hoy
+                                        </p>
+                                        <p
+                                            class="stat-value"
+                                            id="asistenciasHoy"
+                                        >
+                                            0
+                                        </p>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card card-yellow">
+                                <div class="stat-content">
+                                    <div class="stat-info">
+                                        <p class="stat-label">
+                                            Ingresos del Mes
+                                        </p>
+                                        <p
+                                            class="stat-value"
+                                            id="ingresosDelMes"
+                                        >
+                                            $0
+                                        </p>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dashboard-grid">
+                            <div class="card">
+                                <h3 class="card-title">
+                                    Alertas de Vencimiento
+                                </h3>
+                                <div
+                                    id="alertasVencimiento"
+                                    class="alerts-list"
+                                ></div>
+                            </div>
+                            <div class="card">
+                                <h3 class="card-title">Últimas Asistencias</h3>
+                                <div
+                                    id="ultimasAsistencias"
+                                    class="attendance-list"
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- MÓDULO USUARIOS -->
+                    <div
+                        id="usuariosModule"
+                        class="module"
+                        style="display: none"
+                    >
+                        <div class="module-header">
+                            <h2 class="module-title">Gestión de Usuarios</h2>
+                            <button id="btnNuevoUsuario" class="btn-primary">
+                                <i class="fas fa-user-plus"></i> Nuevo Usuario
+                            </button>
+                        </div>
+
+                        <div class="card">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input
+                                    type="text"
+                                    id="searchUsuarios"
+                                    placeholder="Buscar por nombre, usuario o rol..."
+                                />
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th>Rol</th>
+                                            <th>Estado</th>
+                                            <th>Fecha de Creación</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaUsuarios">
+                                        <!-- Se genera dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Nuevo Usuario -->
+                    <div
+                        id="modalNuevoUsuario"
+                        class="modal"
+                        style="display: none"
+                    >
+                        <div
+                            class="modal-overlay"
+                            onclick="cerrarModalUsuario()"
+                        ></div>
+                        <div class="modal-content modal-usuario">
+                            <button
+                                class="modal-close"
+                                onclick="cerrarModalUsuario()"
+                            >
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <div class="modal-header-usuario">
+                                <i class="fas fa-user-plus"></i>
+                                <h3>Crear Nuevo Usuario</h3>
+                            </div>
+
+                            <div class="modal-body-usuario">
+                                <form id="formNuevoUsuario">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Nombre *</label>
+                                            <input
+                                                type="text"
+                                                id="nuevoNombre"
+                                                class="form-control"
+                                                placeholder="Ej: Juan"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Apellido *</label>
+                                            <input
+                                                type="text"
+                                                id="nuevoApellido"
+                                                class="form-control"
+                                                placeholder="Ej: Pérez"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Correo Electrónico *</label>
+                                        <input
+                                            type="email"
+                                            id="nuevoEmail"
+                                            class="form-control"
+                                            placeholder="usuario@ejemplo.com"
+                                            required
+                                        />
+                                        <small class="form-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            El correo debe ser único en el
+                                            sistema
+                                        </small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Rol en el Sistema *</label>
+                                        <select
+                                            id="nuevoRol"
+                                            class="form-control"
+                                            required
+                                            onchange="toggleCampoDniSocio()"
+                                        >
+                                            <option value="">
+                                                Seleccionar rol...
+                                            </option>
+                                            <option value="Administrador">
+                                                Administrador
+                                            </option>
+                                            <option value="Recepcionista">
+                                                Recepcionista
+                                            </option>
+                                            <option value="Instructor">
+                                                Instructor
+                                            </option>
+                                            <option value="Socio">Socio</option>
+                                        </select>
+                                        <small class="form-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            El usuario y contraseña se generarán
+                                            automáticamente
+                                        </small>
+                                    </div>
+
+                                    <div class="form-group" id="grupoDniSocio" style="display: none">
+                                        <label>DNI *</label>
+                                        <input
+                                            type="text"
+                                            id="nuevoDni"
+                                            class="form-control"
+                                            placeholder="Ej: 30123456"
+                                        />
+                                        <small class="form-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            Obligatorio para crear el registro de socio
+                                        </small>
+                                    </div>
+
+                                    <div
+                                        id="errorUsuario"
+                                        class="error-message-usuario"
+                                        style="display: none"
+                                    >
+                                        <!-- Mensaje de error dinámico -->
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button
+                                            type="button"
+                                            class="btn-secondary"
+                                            onclick="cerrarModalUsuario()"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            class="btn-primary"
+                                        >
+                                            <i class="fas fa-user-check"></i>
+                                            Crear Usuario
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <!-- Panel de credenciales generadas -->
+                                <div id="usuarioGenerado" style="display: none">
+                                    <!-- Se genera dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Socios Module -->
+                    <div id="sociosModule" class="module" style="display: none">
+                        <div class="module-header">
+                            <h2 class="module-title">Gestión de Socios</h2>
+                            <button
+                                id="btnNuevoSocio"
+                                class="btn-primary"
+                                onclick="abrirModalNuevoSocio()"
+                            >
+                                <i class="fas fa-plus"></i> Nuevo Socio
+                            </button>
+                        </div>
+                        <div class="card">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input
+                                    type="text"
+                                    id="searchSocios"
+                                    placeholder="Buscar por nombre o DNI..."
+                                />
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>DNI</th>
+                                            <th>Plan</th>
+                                            <th>Vencimiento</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaSocios">
+                                        <!-- Se genera dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        id="modalNuevoSocio"
+                        class="modal"
+                        style="display: none"
+                    >
+                        <div
+                            class="modal-overlay"
+                            onclick="cerrarModalNuevoSocio()"
+                        ></div>
+                        <div class="modal-content modal-nuevo-socio">
+                            <button
+                                class="modal-close"
+                                onclick="cerrarModalNuevoSocio()"
+                            >
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <div class="modal-header-socio">
+                                <i class="fas fa-user-plus"></i>
+                                <h3>Registrar Nuevo Socio</h3>
+                            </div>
+
+                            <div class="modal-body-socio">
+                                <form id="formNuevoSocio">
+                                    <!-- Datos Personales -->
+                                    <div class="section-title">
+                                        <i class="fas fa-user"></i>
+                                        <h4>Datos Personales</h4>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Nombre Completo *</label>
+                                            <input
+                                                type="text"
+                                                id="socioNombre"
+                                                class="form-control"
+                                                placeholder="Ej: Socio Demo"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>DNI *</label>
+                                            <input
+                                                type="text"
+                                                id="socioDni"
+                                                class="form-control"
+                                                placeholder="00000001"
+                                                maxlength="8"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Teléfono *</label>
+                                            <input
+                                                type="tel"
+                                                id="socioTelefono"
+                                                class="form-control"
+                                                placeholder="000-0000001"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Correo Electrónico *</label>
+                                            <input
+                                                type="email"
+                                                id="socioEmail"
+                                                class="form-control"
+                                                placeholder="socio@email.com"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <!-- Plan y Fechas -->
+                                    <div class="section-title">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <h4>Plan y Membresía</h4>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Plan Seleccionado *</label>
+                                            <select
+                                                id="socioPlan"
+                                                class="form-control"
+                                                required
+                                            >
+                                                <option value="">
+                                                    Seleccionar plan...
+                                                </option>
+                                                <option value="1">
+                                                    Mensual - $15,000
+                                                </option>
+                                                <option value="2">
+                                                    Trimestral - $40,000
+                                                </option>
+                                                <option value="3">
+                                                    Anual - $150,000
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Fecha de Alta</label>
+                                            <input
+                                                type="date"
+                                                id="socioFechaAlta"
+                                                class="form-control"
+                                                readonly
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Fecha de Vencimiento</label>
+                                        <input
+                                            type="date"
+                                            id="socioVencimiento"
+                                            class="form-control"
+                                            readonly
+                                        />
+                                        <small class="form-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            Se calcula automáticamente según el
+                                            plan seleccionado
+                                        </small>
+                                    </div>
+
+                                    <!-- Vista previa del plan -->
+                                    <div
+                                        id="planPreview"
+                                        class="plan-preview"
+                                        style="display: none"
+                                    >
+                                        <div class="preview-icon">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                        <div class="preview-info">
+                                            <strong id="planNombrePreview"
+                                                >-</strong
+                                            >
+                                            <p id="planDetallesPreview">-</p>
+                                        </div>
+                                        <div
+                                            class="preview-precio"
+                                            id="planPrecioPreview"
+                                        >
+                                            $0
+                                        </div>
+                                    </div>
+
+                                    <!-- Mensaje de error -->
+                                    <div
+                                        id="errorSocio"
+                                        class="error-message-socio"
+                                        style="display: none"
+                                    >
+                                        <!-- Se genera dinámicamente -->
+                                    </div>
+
+                                    <!-- Botones -->
+                                    <div class="form-actions">
+                                        <button
+                                            type="button"
+                                            class="btn-secondary"
+                                            onclick="cerrarModalNuevoSocio()"
+                                        >
+                                            <i class="fas fa-times"></i>
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            class="btn-primary"
+                                        >
+                                            <i class="fas fa-save"></i>
+                                            Registrar Socio
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <!-- Panel de confirmación -->
+                                <div id="socioRegistrado" style="display: none">
+                                    <div class="confirmacion-header">
+                                        <i class="fas fa-check-circle"></i>
+                                        <h3>¡Socio Registrado Exitosamente!</h3>
+                                    </div>
+
+                                    <div class="confirmacion-info">
+                                        <p>
+                                            El socio ha sido registrado
+                                            correctamente en el sistema.
+                                        </p>
+                                    </div>
+
+                                    <div class="confirmacion-datos">
+                                        <div class="dato-item">
+                                            <label>Nombre:</label>
+                                            <span id="confirmNombre">-</span>
+                                        </div>
+                                        <div class="dato-item">
+                                            <label>DNI:</label>
+                                            <span id="confirmDni">-</span>
+                                        </div>
+                                        <div class="dato-item">
+                                            <label>Plan:</label>
+                                            <span id="confirmPlan">-</span>
+                                        </div>
+                                        <div class="dato-item">
+                                            <label>Vencimiento:</label>
+                                            <span id="confirmVencimiento"
+                                                >-</span
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="credenciales-generadas">
+                                        <h4>
+                                            <i class="fas fa-key"></i>
+                                            Credenciales de Acceso
+                                        </h4>
+                                        <p class="credenciales-aviso">
+                                            Se han generado credenciales
+                                            automáticamente para el portal del
+                                            socio:
+                                        </p>
+
+                                        <div class="credenciales-box">
+                                            <div class="credencial-item">
+                                                <label>Usuario:</label>
+                                                <div class="credencial-value">
+                                                    <code id="confirmUsuario"
+                                                        >-</code
+                                                    >
+                                                    <button
+                                                        class="btn-copy"
+                                                        onclick="copiarTexto('confirmUsuario')"
+                                                        title="Copiar"
+                                                    >
+                                                        <i
+                                                            class="fas fa-copy"
+                                                        ></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="credencial-item">
+                                                <label>Contraseña:</label>
+                                                <div class="credencial-value">
+                                                    <code id="confirmPassword"
+                                                        >-</code
+                                                    >
+                                                    <button
+                                                        class="btn-copy"
+                                                        onclick="copiarTexto('confirmPassword')"
+                                                        title="Copiar"
+                                                    >
+                                                        <i
+                                                            class="fas fa-copy"
+                                                        ></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="confirmacion-actions">
+                                        <button
+                                            class="btn-secondary"
+                                            onclick="descargarCredencialesSocio()"
+                                        >
+                                            <i class="fas fa-download"></i>
+                                            Descargar Credenciales
+                                        </button>
+                                        <button
+                                            class="btn-primary"
+                                            onclick="finalizarRegistroSocio()"
+                                        >
+                                            <i class="fas fa-check"></i>
+                                            Finalizar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Asistencias Module -->
+                    <div
+                        id="asistenciasModule"
+                        class="module"
+                        style="display: none"
+                    >
+                        <h2 class="module-title">Control de Asistencias</h2>
+
+                        <div class="card">
+                            <h3 class="card-title">Registrar Ingreso</h3>
+                            <div class="form-inline">
+                                <input
+                                    type="text"
+                                    id="dniAsistencia"
+                                    placeholder="Ingrese DNI del socio..."
+                                    class="form-control"
+                                />
+                                <button
+                                    id="btnRegistrarAsistencia"
+                                    class="btn-success"
+                                >
+                                    <i class="fas fa-check"></i> Registrar Ingreso
+                                </button>
+                            </div>
+                            <div
+                                id="mensajeAsistencia"
+                                class="message"
+                                style="display: none"
+                            ></div>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="card-title">Historial de Asistencias</h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Socio</th>
+                                            <th>Fecha</th>
+                                            <th>Hora</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaAsistencias">
+                                        <!-- Se genera dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pagos Module -->
+                    <div id="pagosModule" class="module" style="display: none">
+                        <h2 class="module-title">Gestión de Pagos</h2>
+
+                        <div class="card">
+                            <h3 class="card-title">Registrar Pago</h3>
+
+                            <div class="pago-tipo-toggle">
+                                <button
+                                    type="button"
+                                    class="pago-tipo-btn active"
+                                    id="btnTipoPagoPlan"
+                                    onclick="cambiarTipoPago('plan')"
+                                >
+                                    <i class="fas fa-id-card"></i> Pagar por Plan
+                                </button>
+                                <button
+                                    type="button"
+                                    class="pago-tipo-btn"
+                                    id="btnTipoPagoLibre"
+                                    onclick="cambiarTipoPago('libre')"
+                                >
+                                    <i class="fas fa-edit"></i> Monto Libre
+                                </button>
+                            </div>
+
+                            <div class="form-grid">
+                                <select
+                                    id="socioSeleccionado"
+                                    class="form-control"
+                                >
+                                    <option value="">Seleccionar Socio</option>
+                                </select>
+
+                                <input
+                                    type="number"
+                                    id="montoPago"
+                                    placeholder="Monto"
+                                    class="form-control"
+                                    readonly
+                                />
+
+                                <select id="metodoPago" class="form-control">
+                                    <option>Efectivo</option>
+                                    <option>Transferencia</option>
+                                    <option>Tarjeta</option>
+                                </select>
+
+                                <button
+                                    id="btnRegistrarPago"
+                                    class="btn-primary"
+                                >
+                                    <i class="fas fa-money-bill"></i> Registrar
+                                    Pago
+                                </button>
+                            </div>
+                            <small
+                                class="form-hint"
+                                id="hintMontoPago"
+                            >
+                                <i class="fas fa-info-circle"></i>
+                                El monto se completa automáticamente según el plan del socio seleccionado.
+                            </small>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="card-title">Historial de Pagos</h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Socio</th>
+                                            <th>Monto</th>
+                                            <th>Fecha</th>
+                                            <th>Método</th>
+                                            <th>Concepto</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaPagos">
+                                        <!-- Se genera dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Planes Module -->
+                    <!-- Planes Module -->
+                    <div id="planesModule" class="module" style="display: none">
+                        <div class="module-header">
+                            <h2 class="module-title">Gestión de Planes</h2>
+                            <button
+                                id="btnNuevoPlan"
+                                class="btn-primary"
+                                onclick="abrirModalNuevoPlan()"
+                            >
+                                <i class="fas fa-plus"></i> Nuevo Plan
+                            </button>
+                        </div>
+
+                        <div class="plans-grid" id="planesGrid">
+                            <!-- Se genera dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Modal Nuevo/Editar Plan -->
+                    <div id="modalPlan" class="modal" style="display: none">
+                        <div
+                            class="modal-overlay"
+                            onclick="cerrarModalPlan()"
+                        ></div>
+                        <div class="modal-content modal-plan">
+                            <button
+                                class="modal-close"
+                                onclick="cerrarModalPlan()"
+                            >
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <div class="modal-header-plan">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                                <h3 id="tituloModalPlan">Crear Nuevo Plan</h3>
+                            </div>
+
+                            <div class="modal-body-plan">
+                                <form id="formPlan">
+                                    <div class="form-group">
+                                        <label>Nombre del Plan *</label>
+                                        <input
+                                            type="text"
+                                            id="planNombre"
+                                            class="form-control"
+                                            placeholder="Ej: Mensual, Trimestral, Premium..."
+                                            required
+                                        />
+                                        <small class="form-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            El nombre debe ser único
+                                        </small>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Duración (días) *</label>
+                                            <input
+                                                type="number"
+                                                id="planDuracion"
+                                                class="form-control"
+                                                placeholder="30"
+                                                min="1"
+                                                required
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Costo ($) *</label>
+                                            <input
+                                                type="number"
+                                                id="planCosto"
+                                                class="form-control"
+                                                placeholder="15000"
+                                                min="0"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Descripción *</label>
+                                        <input
+                                            type="text"
+                                            id="planDescripcion"
+                                            class="form-control"
+                                            placeholder="Ej: Acceso completo por 1 mes"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Beneficios</label>
+                                        <textarea
+                                            id="planBeneficios"
+                                            class="form-control"
+                                            rows="4"
+                                            placeholder="Ej:&#10;- Acceso a todas las clases&#10;- Uso de sauna&#10;- Entrenamiento personalizado"
+                                        ></textarea>
+                                        <small class="form-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            Escribe un beneficio por línea
+                                        </small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="checkbox-label-plan">
+                                            <input
+                                                type="checkbox"
+                                                id="planActivo"
+                                                checked
+                                            />
+                                            <span
+                                                >Plan activo (disponible para
+                                                asignar a socios)</span
+                                            >
+                                        </label>
+                                    </div>
+
+                                    <div
+                                        id="errorPlan"
+                                        class="error-message-socio"
+                                        style="display: none"
+                                    >
+                                        <!-- Mensaje de error dinámico -->
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button
+                                            type="button"
+                                            class="btn-secondary"
+                                            onclick="cerrarModalPlan()"
+                                        >
+                                            <i class="fas fa-times"></i>
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            class="btn-primary"
+                                        >
+                                            <i class="fas fa-save"></i> Guardar
+                                            Plan
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        id="clasesInstructoresModule"
+                        class="module"
+                        style="display: none"
+                    >
+                        <h2 class="module-title">
+                            Gestión de Clases e Instructores
+                        </h2>
+
+                        <!-- Sección de Clases -->
+                        <div class="card">
+                            <div class="card-header-flex">
+                                <h3 class="card-title">
+                                    <i class="fas fa-dumbbell"></i> Clases
+                                    Disponibles
+                                </h3>
+                            </div>
+
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Clase</th>
+                                            <th>Tipo</th>
+                                            <th>Horario</th>
+                                            <th>Duración</th>
+                                            <th>Cupo</th>
+                                            <th>Instructor Asignado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaClasesGym">
+                                        <!-- Se genera dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Sección de Instructores -->
+                        <div class="card">
+                            <div class="card-header-flex">
+                                <h3 class="card-title">
+                                    <i class="fas fa-users"></i> Instructores
+                                    Registrados
+                                </h3>
+                            </div>
+
+                            <div
+                                class="instructores-grid"
+                                id="instructoresGrid"
+                            >
+                                <!-- Se genera dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal para Asignar Instructor -->
+                    <div
+                        id="asignarInstructorModal"
+                        class="modal"
+                        style="display: none"
+                    >
+                        <div
+                            class="modal-overlay"
+                            onclick="cerrarModalAsignar()"
+                        ></div>
+                        <div class="modal-content modal-asignar-instructor">
+                            <button
+                                class="modal-close"
+                                onclick="cerrarModalAsignar()"
+                            >
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <div class="modal-header-instructor">
+                                <i class="fas fa-user-plus"></i>
+                                <h3>Asignar Instructor a Clase</h3>
+                            </div>
+
+                            <div class="modal-body-instructor">
+                                <div class="clase-info-box">
+                                    <h4>Clase seleccionada:</h4>
+                                    <p id="claseSeleccionadaNombre"></p>
+                                    <div class="clase-detalles-modal">
+                                        <span
+                                            ><i class="fas fa-clock"></i>
+                                            <span
+                                                id="claseSeleccionadaHorario"
+                                            ></span
+                                        ></span>
+                                        <span
+                                            ><i class="fas fa-tag"></i>
+                                            <span
+                                                id="claseSeleccionadaTipo"
+                                            ></span
+                                        ></span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Seleccionar Instructor:</label>
+                                    <select
+                                        id="instructorSelect"
+                                        class="form-control"
+                                    >
+                                        <option value="">
+                                            -- Sin instructor asignado --
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div
+                                    class="instructor-preview"
+                                    id="instructorPreview"
+                                    style="display: none"
+                                >
+                                    <!-- Se genera dinámicamente -->
+                                </div>
+                            </div>
+
+                            <div class="modal-footer-instructor">
+                                <button
+                                    class="btn-secondary"
+                                    onclick="cerrarModalAsignar()"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    class="btn-primary"
+                                    onclick="confirmarAsignacion()"
+                                >
+                                    <i class="fas fa-check"></i> Asignar
+                                    Instructor
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Mi Plan Module -->
+                    <!-- Mi Plan Module -->
+                    <div id="miPlanModule" class="module" style="display: none">
+                        <h2 class="module-title">Mi Plan</h2>
+
+                        <div class="my-plan-container">
+                            <div class="card my-plan-card">
+                                <div class="plan-status-header">
+                                    <div class="plan-status-icon">
+                                        <i class="fas fa-id-card"></i>
+                                    </div>
+                                    <div style="flex: 1">
+                                        <h3 id="miPlanNombre">Plan Mensual</h3>
+                                        <p
+                                            id="miPlanEstado"
+                                            class="plan-status-text"
+                                        >
+                                            Activo
+                                        </p>
+                                    </div>
+                                    <div class="plan-quick-actions">
+                                        <button
+                                            class="btn-icon-action btn-pause"
+                                            onclick="abrirModalPausarPlan()"
+                                            title="Pausar Plan"
+                                        >
+                                            <i class="fas fa-pause"></i>
+                                        </button>
+                                        <button
+                                            class="btn-icon-action btn-cancel"
+                                            onclick="abrirModalCancelarPlan()"
+                                            title="Cancelar Plan"
+                                        >
+                                            <i class="fas fa-times-circle"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="plan-details-grid">
+                                    <div class="plan-detail-item">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <div>
+                                            <p class="detail-label">
+                                                Fecha de inicio
+                                            </p>
+                                            <p
+                                                class="detail-value"
+                                                id="miPlanFechaInicio"
+                                            >
+                                                -
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="plan-detail-item">
+                                        <i class="fas fa-calendar-check"></i>
+                                        <div>
+                                            <p class="detail-label">
+                                                Vencimiento
+                                            </p>
+                                            <p
+                                                class="detail-value"
+                                                id="miPlanVencimiento"
+                                            >
+                                                -
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="plan-detail-item">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        <div>
+                                            <p class="detail-label">
+                                                Costo mensual
+                                            </p>
+                                            <p
+                                                class="detail-value"
+                                                id="miPlanCosto"
+                                            >
+                                                -
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="plan-detail-item">
+                                        <i class="fas fa-clock"></i>
+                                        <div>
+                                            <p class="detail-label">
+                                                Días restantes
+                                            </p>
+                                            <p
+                                                class="detail-value"
+                                                id="miPlanDiasRestantes"
+                                            >
+                                                -
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="plan-progress-section">
+                                    <div class="progress-label">
+                                        <span>Progreso del plan</span>
+                                        <span id="planProgressPercent">0%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div
+                                            class="progress-fill"
+                                            id="planProgressBar"
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="my-plan-grid">
+                                <div class="card">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-dumbbell"></i>
+                                        Mis Asistencias
+                                    </h3>
+                                    <div class="stat-highlight">
+                                        <p
+                                            class="stat-number"
+                                            id="misAsistenciasMes"
+                                        >
+                                            0
+                                        </p>
+                                        <p class="stat-text">
+                                            asistencias este mes
+                                        </p>
+                                    </div>
+                                    <div class="mini-chart">
+                                        <div
+                                            class="chart-bar"
+                                            id="chartAsistencias"
+                                        >
+                                            <!-- Se genera dinámicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-credit-card"></i>
+                                        Próximo Pago
+                                    </h3>
+                                    <div class="payment-reminder">
+                                        <div
+                                            class="payment-amount"
+                                            id="proximoPagoMonto"
+                                        >
+                                            $0
+                                        </div>
+                                        <p class="payment-date">
+                                            Vence el
+                                            <span id="proximoPagoFecha">-</span>
+                                        </p>
+                                    </div>
+                                    <button
+                                        class="btn-primary mt-4"
+                                        onclick="renovarPlan()"
+                                    >
+                                        <i class="fas fa-sync-alt"></i>
+                                        Renovar Plan
+                                    </button>
+                                </div>
+
+                                <div class="card">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-chart-line"></i>
+                                        Estado de Cuenta
+                                    </h3>
+                                    <div class="account-status">
+                                        <div class="status-item">
+                                            <span>Últimos pagos:</span>
+                                            <span
+                                                class="status-value"
+                                                id="ultimosPagosCount"
+                                                >0</span
+                                            >
+                                        </div>
+                                        <div class="status-item">
+                                            <span>Total pagado:</span>
+                                            <span
+                                                class="status-value"
+                                                id="totalPagado"
+                                                >$0</span
+                                            >
+                                        </div>
+                                        <div class="status-item">
+                                            <span>Estado:</span>
+                                            <span
+                                                class="status-badge"
+                                                id="estadoCuenta"
+                                                >Al día</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <button
+                                        class="btn-outline mt-4"
+                                        onclick="verHistorialPagos()"
+                                    >
+                                        Ver historial completo
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <h3 class="card-title">
+                                    <i class="fas fa-history"></i>
+                                    Historial de Asistencias Recientes
+                                </h3>
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Hora de ingreso</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="miHistorialAsistencias">
+                                            <!-- Se genera dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reserva de Turnos Module -->
+                    <div id="turnosModule" class="module" style="display: none">
+                        <h2 class="module-title">Reserva de Turnos</h2>
+
+                        <div class="turnos-container">
+                            <div class="card">
+                                <h3 class="card-title">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    Clases Disponibles
+                                </h3>
+
+                                <div class="filter-section">
+                                    <select id="filterDia" class="form-control">
+                                        <option value="">Todos los días</option>
+                                        <option value="Lunes">Lunes</option>
+                                        <option value="Martes">Martes</option>
+                                        <option value="Miércoles">
+                                            Miércoles
+                                        </option>
+                                        <option value="Jueves">Jueves</option>
+                                        <option value="Viernes">Viernes</option>
+                                        <option value="Sábado">Sábado</option>
+                                    </select>
+
+                                    <select
+                                        id="filterActividad"
+                                        class="form-control"
+                                    >
+                                        <option value="">
+                                            Todas las actividades
+                                        </option>
+                                        <!-- Se genera dinámicamente desde las clases del gym -->
+                                    </select>
+                                </div>
+
+                                <div class="clases-grid" id="clasesDisponibles">
+                                    <!-- Se genera dinámicamente -->
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <h3 class="card-title">
+                                    <i class="fas fa-bookmark"></i>
+                                    Mis Turnos Reservados
+                                </h3>
+                                <div
+                                    id="misTurnosReservados"
+                                    class="turnos-list"
+                                >
+                                    <!-- Se genera dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Mis Clases Module (Instructor) -->
+                    <div id="misClasesModule" class="module" style="display: none">
+                <div class="module-header">
+                    <div>
+                        <h2>
+                            <i class="fas fa-chalkboard-teacher"></i> Mis Clases
+                        </h2>
+                        <p>Gestiona tus clases y toma asistencia</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-refresh" onclick="actualizarMisClases()">
+                            <i class="fas fa-sync-alt"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="instructor-container">
+                    <!-- Resumen del Instructor -->
+                    <div class="instructor-summary">
+                        <div class="stat-card-instructor">
+                            <i class="fas fa-calendar-check"></i>
+                            <div>
+                                <h3 id="totalClasesInstructor">0</h3>
+                                <p>Clases Asignadas</p>
+                            </div>
+                        </div>
+                        <div class="stat-card-instructor">
+                            <i class="fas fa-users"></i>
+                            <div>
+                                <h3 id="totalAlumnosHoy">0</h3>
+                                <p>Alumnos Hoy</p>
+                            </div>
+                        </div>
+                        <div class="stat-card-instructor">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h3 id="proximaClaseHora">--:--</h3>
+                                <p>Próxima Clase</p>
+                            </div>
+                        </div>
+                        <div class="stat-card-instructor">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <h3 id="asistenciasSemana">0</h3>
+                                <p>Asistencias esta semana</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calendario Semanal -->
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-calendar-week"></i> Mi Horario Semanal
+                        </h3>
+                        <div id="calendarioSemanalInstructor" class="calendario-semanal">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Clase Actual / Próxima -->
+                    <div class="card" id="claseActualCard" style="display: none">
+                        <h3 class="card-title">
+                            <i class="fas fa-play-circle"></i> Clase en Curso
+                        </h3>
+                        <div id="claseActualInfo">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Próximas Clases -->
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-calendar-alt"></i> Próximas Clases
+                        </h3>
+                        <div id="proximasClasesInstructor" class="proximas-clases-list">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- MODAL: TOMAR ASISTENCIA -->
+            <!-- ============================================ -->
+            <div id="modalTomarAsistencia" class="modal">
+                <div class="modal-overlay" onclick="cerrarModalAsistencia()"></div>
+                <div class="modal-content modal-asistencia-instructor">
+                    <button class="modal-close" onclick="cerrarModalAsistencia()">
+                        <i class="fas fa-times"></i>
+                    </button>
+
+                    <div class="modal-header-asistencia">
+                        <i class="fas fa-clipboard-check"></i>
+                        <div>
+                            <h3>Tomar Asistencia</h3>
+                            <p id="asistenciaClaseInfo">--</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-body-asistencia">
+                        <!-- Información de la clase -->
+                        <div class="info-clase-asistencia">
+                            <div class="info-item-asist">
+                                <i class="fas fa-calendar"></i>
+                                <span id="asistenciaFecha">--</span>
+                            </div>
+                            <div class="info-item-asist">
+                                <i class="fas fa-clock"></i>
+                                <span id="asistenciaHora">--</span>
+                            </div>
+                            <div class="info-item-asist">
+                                <i class="fas fa-users"></i>
+                                <span><span id="asistenciaTotal">0</span> inscriptos</span>
+                            </div>
+                        </div>
+
+                        <!-- Búsqueda rápida -->
+                        <div class="busqueda-alumno">
+                            <i class="fas fa-search"></i>
+                            <input
+                                type="text"
+                                id="buscarAlumnoAsistencia"
+                                placeholder="Buscar alumno por nombre o DNI..."
+                                onkeyup="filtrarAlumnosAsistencia()"
+                            />
+                        </div>
+
+                        <!-- Lista de alumnos -->
+                        <div id="listaAlumnosAsistencia" class="lista-alumnos-asistencia">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+
+                        <!-- Estadísticas -->
+                        <div class="stats-asistencia">
+                            <div class="stat-asist stat-presentes">
+                                <i class="fas fa-check-circle"></i>
+                                <div>
+                                    <strong id="cantPresentes">0</strong>
+                                    <span>Presentes</span>
+                                </div>
+                            </div>
+                            <div class="stat-asist stat-ausentes">
+                                <i class="fas fa-times-circle"></i>
+                                <div>
+                                    <strong id="cantAusentes">0</strong>
+                                    <span>Ausentes</span>
+                                </div>
+                            </div>
+                            <div class="stat-asist stat-porcentaje">
+                                <i class="fas fa-percent"></i>
+                                <div>
+                                    <strong id="porcentajeAsistencia">0%</strong>
+                                    <span>Asistencia</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-asistencia">
+                        <button class="btn-secondary" onclick="cerrarModalAsistencia()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button class="btn-primary" onclick="guardarAsistenciaClase()">
+                            <i class="fas fa-save"></i> Guardar Asistencia
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- Mi Horario Module (Instructor) -->
+                    <div
+                        id="miHorarioModule"
+                        class="module"
+                        style="display: none"
+                    >
+                        <h2 class="module-title">Mi Horario Semanal</h2>
+
+                        <div class="card">
+                            <div class="horario-semanal" id="horarioSemanal">
+                                <!-- Se genera dinámicamente -->
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="card-title">
+                                <i class="fas fa-chart-bar"></i>
+                                Estadísticas
+                            </h3>
+                            <div class="instructor-stats-grid">
+                                <div class="stat-card-instructor">
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                    <div>
+                                        <p class="stat-label">
+                                            Total de Clases
+                                        </p>
+                                        <p
+                                            class="stat-value"
+                                            id="totalClasesInstructor"
+                                        >
+                                            0
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="stat-card-instructor">
+                                    <i class="fas fa-users"></i>
+                                    <div>
+                                        <p class="stat-label">
+                                            Total de Alumnos
+                                        </p>
+                                        <p
+                                            class="stat-value"
+                                            id="totalAlumnosInstructor"
+                                        >
+                                            0
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="stat-card-instructor">
+                                    <i class="fas fa-clock"></i>
+                                    <div>
+                                        <p class="stat-label">
+                                            Horas Semanales
+                                        </p>
+                                        <p
+                                            class="stat-value"
+                                            id="horasSemanalesInstructor"
+                                        >
+                                            0
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Mi Perfil Module -->
+                    <div id="perfilModule" class="module" style="display: none">
+                        <h2 class="module-title">Mi Perfil</h2>
+
+                        <div class="perfil-container">
+                            <div class="perfil-header-card card">
+                                <div class="perfil-avatar-section">
+                                    <div
+                                        class="perfil-avatar"
+                                        id="perfilAvatar"
+                                    >
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <button
+                                        class="btn-outline btn-sm"
+                                        onclick="cambiarFoto()"
+                                    >
+                                        <i class="fas fa-camera"></i> Cambiar
+                                        Foto
+                                    </button>
+                                </div>
+                                <div class="perfil-info-section">
+                                    <h3 id="perfilNombreCompleto">-</h3>
+                                    <p class="perfil-email" id="perfilEmail">
+                                        -
+                                    </p>
+                                    <p class="perfil-miembro">
+                                        Miembro desde
+                                        <span id="perfilMiembroDesde">-</span>
+                                    </p>
+                                    <div class="perfil-badges">
+                                        <span
+                                            class="badge badge-active"
+                                            id="perfilEstado"
+                                            >Activo</span
+                                        >
+                                        <span
+                                            class="badge"
+                                            style="
+                                                background: #dbeafe;
+                                                color: #1e40af;
+                                            "
+                                            id="perfilPlan"
+                                            >-</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="perfil-grid">
+                                <div class="card">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-user-edit"></i
+                                        >Información Personal
+                                    </h3>
+                                    <form
+                                        id="formDatosPersonales"
+                                        class="perfil-form"
+                                    >
+                                        <div class="form-group">
+                                            <label>Nombre Completo</label>
+                                            <input
+                                                type="text"
+                                                id="editNombre"
+                                                class="form-control"
+                                                required
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>DNI</label>
+                                            <input
+                                                type="text"
+                                                id="editDni"
+                                                class="form-control"
+                                                readonly
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Email</label>
+                                            <input
+                                                type="email"
+                                                id="editEmail"
+                                                class="form-control"
+                                                required
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Teléfono</label>
+                                            <input
+                                                type="tel"
+                                                id="editTelefono"
+                                                class="form-control"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Fecha de Nacimiento</label>
+                                            <input
+                                                type="date"
+                                                id="editFechaNacimiento"
+                                                class="form-control"
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Género</label>
+                                            <select
+                                                id="editGenero"
+                                                class="form-control"
+                                            >
+                                                <option value="">
+                                                    Seleccionar...
+                                                </option>
+                                                <option value="Masculino">
+                                                    Masculino
+                                                </option>
+                                                <option value="Femenino">
+                                                    Femenino
+                                                </option>
+                                                <option value="Otro">
+                                                    Otro
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            class="btn-primary"
+                                        >
+                                            <i class="fas fa-save"></i> Guardar
+                                            Cambios
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="card">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-phone"></i>Contacto de
+                                        Emergencia
+                                    </h3>
+                                    <form
+                                        id="formEmergencia"
+                                        class="perfil-form"
+                                    >
+                                        <div class="form-group">
+                                            <label>Nombre del Contacto</label>
+                                            <input
+                                                type="text"
+                                                id="emergenciaNombre"
+                                                class="form-control"
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Relación</label>
+                                            <input
+                                                type="text"
+                                                id="emergenciaRelacion"
+                                                class="form-control"
+                                                placeholder="Ej: Madre, Padre, Hermano"
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Teléfono</label>
+                                            <input
+                                                type="tel"
+                                                id="emergenciaTelefono"
+                                                class="form-control"
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            class="btn-primary"
+                                        >
+                                            <i class="fas fa-save"></i> Guardar
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="card">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-heartbeat"></i
+                                        >Información Médica
+                                    </h3>
+                                    <form id="formMedico" class="perfil-form">
+                                        <div class="form-group">
+                                            <label>Grupo Sanguíneo</label>
+                                            <select
+                                                id="grupoSanguineo"
+                                                class="form-control"
+                                            >
+                                                <option value="">
+                                                    Seleccionar...
+                                                </option>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Alergias</label>
+                                            <textarea
+                                                id="alergias"
+                                                class="form-control"
+                                                rows="3"
+                                                placeholder="Describe tus alergias"
+                                            ></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label
+                                                >Lesiones o Condiciones</label
+                                            >
+                                            <textarea
+                                                id="lesiones"
+                                                class="form-control"
+                                                rows="3"
+                                                placeholder="Lesiones previas o condiciones médicas"
+                                            ></textarea>
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            class="btn-primary"
+                                        >
+                                            <i class="fas fa-save"></i> Guardar
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="card">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-lock"></i>Seguridad
+                                    </h3>
+                                    <form
+                                        id="formCambiarPassword"
+                                        class="perfil-form"
+                                    >
+                                        <div class="form-group">
+                                            <label>Contraseña Actual</label>
+                                            <input
+                                                type="password"
+                                                id="passwordActual"
+                                                class="form-control"
+                                                required
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Nueva Contraseña</label>
+                                            <input
+                                                type="password"
+                                                id="passwordNueva"
+                                                class="form-control"
+                                                required
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label
+                                                >Confirmar Nueva
+                                                Contraseña</label
+                                            >
+                                            <input
+                                                type="password"
+                                                id="passwordConfirmar"
+                                                class="form-control"
+                                                required
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            class="btn-primary"
+                                        >
+                                            <i class="fas fa-key"></i> Cambiar
+                                            Contraseña
+                                        </button>
+                                    </form>
+                                    <div class="preferencias-section">
+                                        <h4>Preferencias de Notificaciones</h4>
+                                        <div class="checkbox-group">
+                                            <label class="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    id="notifEmail"
+                                                    checked
+                                                />
+                                                <span
+                                                    >Notificaciones por
+                                                    Email</span
+                                                >
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    id="notifVencimiento"
+                                                    checked
+                                                />
+                                                <span
+                                                    >Alertas de
+                                                    Vencimiento</span
+                                                >
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    id="notifClases"
+                                                    checked
+                                                />
+                                                <span
+                                                    >Recordatorio de
+                                                    Clases</span
+                                                >
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Módulo Reportes -->
+                    <div
+                        id="reportesModule"
+                        class="module"
+                        style="display: none"
+                    >
+                        <h2 class="module-title">Reportes y Estadísticas</h2>
+
+                        <!-- Selector de tipo de reporte -->
+                        <div class="card">
+                            <div class="reportes-tabs">
+                                <button
+                                    class="tab-btn active"
+                                    onclick="cambiarTipoReporte('pagos')"
+                                >
+                                    <i class="fas fa-dollar-sign"></i> Reportes
+                                    de Pagos
+                                </button>
+                                <button
+                                    class="tab-btn"
+                                    onclick="cambiarTipoReporte('asistencias')"
+                                >
+                                    <i class="fas fa-calendar-check"></i>
+                                    Reportes de Asistencias
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Reporte de Pagos -->
+                        <div id="reportePagos" class="reporte-section">
+                            <div class="card">
+                                <h3 class="card-title">
+                                    <i class="fas fa-filter"></i> Filtros
+                                </h3>
+                                <div class="filtros-grid">
+                                    <div class="form-group">
+                                        <label>Período</label>
+                                        <select
+                                            id="filtroPeriodoPagos"
+                                            class="form-control"
+                                            onchange="aplicarFiltrosPagos()"
+                                        >
+                                            <option value="mes-actual">
+                                                Mes Actual
+                                            </option>
+                                            <option value="mes-anterior">
+                                                Mes Anterior
+                                            </option>
+                                            <option value="trimestre">
+                                                Último Trimestre
+                                            </option>
+                                            <option value="año">
+                                                Año Actual
+                                            </option>
+                                            <option value="personalizado">
+                                                Personalizado
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div
+                                        class="form-group"
+                                        id="rangoFechasPagos"
+                                        style="display: none"
+                                    >
+                                        <label>Desde</label>
+                                        <input
+                                            type="date"
+                                            id="fechaDesdePagos"
+                                            class="form-control"
+                                            onchange="aplicarFiltrosPagos()"
+                                        />
+                                    </div>
+                                    <div
+                                        class="form-group"
+                                        id="rangoFechasPagos2"
+                                        style="display: none"
+                                    >
+                                        <label>Hasta</label>
+                                        <input
+                                            type="date"
+                                            id="fechaHastaPagos"
+                                            class="form-control"
+                                            onchange="aplicarFiltrosPagos()"
+                                        />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Plan</label>
+                                        <select
+                                            id="filtroPlanPagos"
+                                            class="form-control"
+                                            onchange="aplicarFiltrosPagos()"
+                                        >
+                                            <option value="todos">
+                                                Todos los planes
+                                            </option>
+                                            <option value="Mensual">
+                                                Mensual
+                                            </option>
+                                            <option value="Trimestral">
+                                                Trimestral
+                                            </option>
+                                            <option value="Anual">Anual</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Método de Pago</label>
+                                        <select
+                                            id="filtroMetodoPagos"
+                                            class="form-control"
+                                            onchange="aplicarFiltrosPagos()"
+                                        >
+                                            <option value="todos">Todos</option>
+                                            <option value="Efectivo">
+                                                Efectivo
+                                            </option>
+                                            <option value="Transferencia">
+                                                Transferencia
+                                            </option>
+                                            <option value="Tarjeta">
+                                                Tarjeta
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Resumen de Pagos -->
+                            <div class="stats-grid">
+                                <div class="stat-card card-green">
+                                    <div class="stat-content">
+                                        <div class="stat-info">
+                                            <p class="stat-label">
+                                                Total Ingresos
+                                            </p>
+                                            <p
+                                                class="stat-value"
+                                                id="totalIngresosPagos"
+                                            >
+                                                $0
+                                            </p>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i
+                                                class="fas fa-money-bill-wave"
+                                            ></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stat-card card-blue">
+                                    <div class="stat-content">
+                                        <div class="stat-info">
+                                            <p class="stat-label">
+                                                Cantidad de Pagos
+                                            </p>
+                                            <p
+                                                class="stat-value"
+                                                id="cantidadPagos"
+                                            >
+                                                0
+                                            </p>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-receipt"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stat-card card-yellow">
+                                    <div class="stat-content">
+                                        <div class="stat-info">
+                                            <p class="stat-label">
+                                                Promedio por Pago
+                                            </p>
+                                            <p
+                                                class="stat-value"
+                                                id="promedioPagos"
+                                            >
+                                                $0
+                                            </p>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-chart-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabla detallada -->
+                            <div class="card">
+                                <div class="card-header-flex">
+                                    <h3 class="card-title">Detalle de Pagos</h3>
+                                    <div class="export-buttons">
+                                        <button
+                                            class="btn-export"
+                                            onclick="exportarPagosExcel()"
+                                        >
+                                            <i class="fas fa-file-excel"></i>
+                                            Exportar Excel
+                                        </button>
+                                        <button
+                                            class="btn-export"
+                                            onclick="exportarPagosPDF()"
+                                        >
+                                            <i class="fas fa-file-pdf"></i>
+                                            Exportar PDF
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Socio</th>
+                                                <th>Concepto</th>
+                                                <th>Plan</th>
+                                                <th>Método</th>
+                                                <th>Monto</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaReportePagos"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reporte de Asistencias -->
+                        <div
+                            id="reporteAsistencias"
+                            class="reporte-section"
+                            style="display: none"
+                        >
+                            <div class="card">
+                                <h3 class="card-title">
+                                    <i class="fas fa-filter"></i> Filtros
+                                </h3>
+                                <div class="filtros-grid">
+                                    <div class="form-group">
+                                        <label>Período</label>
+                                        <select
+                                            id="filtroPeriodoAsistencias"
+                                            class="form-control"
+                                            onchange="aplicarFiltrosAsistencias()"
+                                        >
+                                            <option value="hoy">Hoy</option>
+                                            <option value="semana">
+                                                Esta Semana
+                                            </option>
+                                            <option value="mes-actual">
+                                                Mes Actual
+                                            </option>
+                                            <option value="mes-anterior">
+                                                Mes Anterior
+                                            </option>
+                                            <option value="personalizado">
+                                                Personalizado
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div
+                                        class="form-group"
+                                        id="rangoFechasAsistencias"
+                                        style="display: none"
+                                    >
+                                        <label>Desde</label>
+                                        <input
+                                            type="date"
+                                            id="fechaDesdeAsistencias"
+                                            class="form-control"
+                                            onchange="aplicarFiltrosAsistencias()"
+                                        />
+                                    </div>
+                                    <div
+                                        class="form-group"
+                                        id="rangoFechasAsistencias2"
+                                        style="display: none"
+                                    >
+                                        <label>Hasta</label>
+                                        <input
+                                            type="date"
+                                            id="fechaHastaAsistencias"
+                                            class="form-control"
+                                            onchange="aplicarFiltrosAsistencias()"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Resumen de Asistencias -->
+                            <div class="stats-grid">
+                                <div class="stat-card card-blue">
+                                    <div class="stat-content">
+                                        <div class="stat-info">
+                                            <p class="stat-label">
+                                                Total Asistencias
+                                            </p>
+                                            <p
+                                                class="stat-value"
+                                                id="totalAsistencias"
+                                            >
+                                                0
+                                            </p>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stat-card card-green">
+                                    <div class="stat-content">
+                                        <div class="stat-info">
+                                            <p class="stat-label">
+                                                Promedio Diario
+                                            </p>
+                                            <p
+                                                class="stat-value"
+                                                id="promedioDiarioAsistencias"
+                                            >
+                                                0
+                                            </p>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-calendar-day"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stat-card card-yellow">
+                                    <div class="stat-content">
+                                        <div class="stat-info">
+                                            <p class="stat-label">
+                                                Día con más afluencia
+                                            </p>
+                                            <p
+                                                class="stat-value"
+                                                id="diaMasAsistencias"
+                                            >
+                                                -
+                                            </p>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-trophy"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gráfico de tendencias -->
+                            <div class="card">
+                                <h3 class="card-title">
+                                    <i class="fas fa-chart-area"></i> Tendencia
+                                    de Asistencias
+                                </h3>
+                                <div
+                                    id="graficoAsistencias"
+                                    class="grafico-container"
+                                ></div>
+                            </div>
+
+                            <!-- Tabla detallada -->
+                            <div class="card">
+                                <div class="card-header-flex">
+                                    <h3 class="card-title">
+                                        Detalle de Asistencias
+                                    </h3>
+                                    <div class="export-buttons">
+                                        <button
+                                            class="btn-export"
+                                            onclick="exportarAsistenciasExcel()"
+                                        >
+                                            <i class="fas fa-file-excel"></i>
+                                            Exportar Excel
+                                        </button>
+                                        <button
+                                            class="btn-export"
+                                            onclick="exportarAsistenciasPDF()"
+                                        >
+                                            <i class="fas fa-file-pdf"></i>
+                                            Exportar PDF
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Hora</th>
+                                                <th>Socio</th>
+                                                <th>Plan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody
+                                            id="tablaReporteAsistencias"
+                                        ></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+        <div id="ticketModal" class="modal" style="display: none">
+            <div class="modal-overlay" onclick="cerrarTicket()"></div>
+            <div class="modal-content ticket-container">
+                <button class="modal-close" onclick="cerrarTicket()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div id="ticketContent" class="ticket-content"></div>
+                <div class="ticket-actions">
+                    <button class="btn-primary" onclick="imprimirTicket()">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                    <button class="btn-secondary" onclick="descargarTicket()">
+                        <i class="fas fa-download"></i> Descargar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Ver Estado del Plan -->
+        <div id="modalEstadoPlan" class="modal" style="display: none">
+            <div class="modal-overlay" onclick="cerrarModalEstadoPlan()"></div>
+            <div class="modal-content modal-nuevo-socio">
+                <button class="modal-close" onclick="cerrarModalEstadoPlan()">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <div
+                    class="modal-header-socio"
+                    style="
+                        background: linear-gradient(
+                            135deg,
+                            #3498db 0%,
+                            #2980b9 100%
+                        );
+                    "
+                >
+                    <i class="fas fa-info-circle"></i>
+                    <h3>Estado del Plan</h3>
+                </div>
+
+                <div class="modal-body-socio">
+                    <div class="confirmacion-datos">
+                        <div class="dato-item">
+                            <label><i class="fas fa-user"></i> Socio:</label>
+                            <span id="estadoPlanNombre">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label><i class="fas fa-id-card"></i> DNI:</label>
+                            <span id="estadoPlanDni">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-calendar-alt"></i> Plan
+                                Actual:</label
+                            >
+                            <span id="estadoPlanNombrePlan">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-calendar-check"></i> Fecha de
+                                Inicio:</label
+                            >
+                            <span id="estadoPlanInicio">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-calendar-times"></i> Fecha de
+                                Vencimiento:</label
+                            >
+                            <span id="estadoPlanVencimiento">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-clock"></i> Días
+                                Restantes:</label
+                            >
+                            <span id="estadoPlanDiasRestantes">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-toggle-on"></i> Estado:</label
+                            >
+                            <span
+                                id="estadoPlanEstado"
+                                class="badge badge-active"
+                                >-</span
+                            >
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-snowflake"></i> Estado de
+                                Congelamiento:</label
+                            >
+                            <span id="estadoPlanCongelado" class="badge"
+                                >-</span
+                            >
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-dollar-sign"></i> Precio del
+                                Plan:</label
+                            >
+                            <span id="estadoPlanPrecio">-</span>
+                        </div>
+                    </div>
+
+                    <div class="confirmacion-actions">
+                        <button
+                            class="btn-secondary"
+                            onclick="cerrarModalEstadoPlan()"
+                        >
+                            <i class="fas fa-times"></i> Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Congelar Plan -->
+        <div id="modalCongelarPlan" class="modal" style="display: none">
+            <div
+                class="modal-overlay"
+                onclick="cerrarModalCongelarPlan()"
+            ></div>
+            <div
+                class="modal-content modal-nuevo-socio"
+                style="max-width: 600px"
+            >
+                <button class="modal-close" onclick="cerrarModalCongelarPlan()">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <div
+                    class="modal-header-socio"
+                    style="
+                        background: linear-gradient(
+                            135deg,
+                            #3498db 0%,
+                            #2980b9 100%
+                        );
+                    "
+                >
+                    <i class="fas fa-snowflake"></i>
+                    <h3>Congelar Plan</h3>
+                </div>
+
+                <div class="modal-body-socio">
+                    <div
+                        class="confirmacion-info"
+                        style="
+                            background: #d1ecf1;
+                            border-left: 4px solid #0c5460;
+                            padding: 16px;
+                            border-radius: 8px;
+                            margin-bottom: 24px;
+                        "
+                    >
+                        <p
+                            style="
+                                margin: 0 0 8px 0;
+                                color: #0c5460;
+                                font-weight: 600;
+                            "
+                        >
+                            <i class="fas fa-info-circle"></i>
+                            <strong>¿Qué es congelar el plan?</strong>
+                        </p>
+                        <p style="margin: 0; color: #0c5460; font-size: 14px">
+                            Al congelar el plan, se pausa el conteo de días sin
+                            perder la membresía. Los días congelados se sumarán
+                            al final del período actual.
+                        </p>
+                    </div>
+
+                    <div class="confirmacion-datos">
+                        <div class="dato-item">
+                            <label><i class="fas fa-user"></i> Socio:</label>
+                            <span id="congelarPlanNombre">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label><i class="fas fa-id-card"></i> DNI:</label>
+                            <span id="congelarPlanDni">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-calendar-alt"></i> Plan
+                                Actual:</label
+                            >
+                            <span id="congelarPlanNombrePlan">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-calendar-times"></i>
+                                Vencimiento Actual:</label
+                            >
+                            <span id="congelarPlanVencimiento">-</span>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="congelarPlanSocioId" />
+
+                    <form id="formCongelarPlan">
+                        <div class="form-group" style="margin-top: 24px">
+                            <label>Días a Congelar *</label>
+                            <input
+                                type="number"
+                                id="congelarPlanDias"
+                                class="form-control"
+                                placeholder="Ej: 7, 15, 30"
+                                min="1"
+                                max="90"
+                                required
+                            />
+                            <small class="form-hint">
+                                <i class="fas fa-info-circle"></i>
+                                Máximo 90 días. Se extenderá la fecha de
+                                vencimiento
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Motivo de Congelamiento (Opcional)</label>
+                            <textarea
+                                id="congelarPlanMotivo"
+                                class="form-control"
+                                rows="3"
+                                placeholder="Ej: Viaje, lesión temporal, razones personales..."
+                            ></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Nueva Fecha de Vencimiento</label>
+                            <input
+                                type="date"
+                                id="congelarPlanNuevaFecha"
+                                class="form-control"
+                                readonly
+                            />
+                            <small class="form-hint">
+                                <i class="fas fa-info-circle"></i>
+                                Se calcula automáticamente según los días
+                                congelados
+                            </small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button
+                                type="button"
+                                class="btn-secondary"
+                                onclick="cerrarModalCongelarPlan()"
+                            >
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn-primary"
+                                style="
+                                    background: linear-gradient(
+                                        135deg,
+                                        #3498db 0%,
+                                        #2980b9 100%
+                                    );
+                                "
+                            >
+                                <i class="fas fa-snowflake"></i> Confirmar
+                                Congelamiento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Cancelar Plan -->
+        <div id="modalCancelarPlan" class="modal" style="display: none">
+            <div
+                class="modal-overlay"
+                onclick="cerrarModalCancelarPlan()"
+            ></div>
+            <div
+                class="modal-content modal-nuevo-socio"
+                style="max-width: 550px"
+            >
+                <button class="modal-close" onclick="cerrarModalCancelarPlan()">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <div
+                    class="modal-header-socio"
+                    style="
+                        background: linear-gradient(
+                            135deg,
+                            #e74c3c 0%,
+                            #c0392b 100%
+                        );
+                    "
+                >
+                    <i class="fas fa-times-circle"></i>
+                    <h3>Cancelar Plan</h3>
+                </div>
+
+                <div class="modal-body-socio">
+                    <div
+                        class="confirmacion-info"
+                        style="
+                            background: #f8d7da;
+                            border-left: 4px solid #e74c3c;
+                            padding: 16px;
+                            border-radius: 8px;
+                            margin-bottom: 24px;
+                        "
+                    >
+                        <p
+                            style="
+                                margin: 0 0 8px 0;
+                                color: #721c24;
+                                font-weight: 600;
+                            "
+                        >
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>¡Advertencia!</strong>
+                        </p>
+                        <p style="margin: 0; color: #721c24; font-size: 14px">
+                            Esta acción cancelará el plan del socio y cambiará
+                            su estado a "Inactivo". El socio no podrá acceder al
+                            gimnasio hasta que renueve su membresía.
+                        </p>
+                    </div>
+
+                    <div class="confirmacion-datos">
+                        <div class="dato-item">
+                            <label><i class="fas fa-user"></i> Socio:</label>
+                            <span id="cancelPlanNombre">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label><i class="fas fa-id-card"></i> DNI:</label>
+                            <span id="cancelPlanDni">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-calendar-alt"></i> Plan
+                                Actual:</label
+                            >
+                            <span id="cancelPlanNombrePlan">-</span>
+                        </div>
+                        <div class="dato-item">
+                            <label
+                                ><i class="fas fa-calendar-times"></i>
+                                Vencimiento:</label
+                            >
+                            <span id="cancelPlanVencimiento">-</span>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="cancelPlanSocioId" />
+
+                    <form id="formCancelarPlan">
+                        <div class="form-group" style="margin-top: 24px">
+                            <label>Motivo de Cancelación (Opcional)</label>
+                            <textarea
+                                id="cancelPlanMotivo"
+                                class="form-control"
+                                rows="3"
+                                placeholder="Ej: Mudanza, problemas económicos, insatisfacción con el servicio..."
+                            ></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button
+                                type="button"
+                                class="btn-secondary"
+                                onclick="cerrarModalCancelarPlan()"
+                            >
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn-primary"
+                                style="
+                                    background: linear-gradient(
+                                        135deg,
+                                        #e74c3c 0%,
+                                        #c0392b 100%
+                                    );
+                                "
+                            >
+                                <i class="fas fa-ban"></i> Confirmar Cancelación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <script src="js-api-core.js"></script>
+        <script src="js-permisos.js"></script>
+        <script src="js-database-seed.js"></script>
+        <script src="js-utils-login.js"></script>
+        <script src="js-dashboard-usuarios.js"></script>
+        <script src="js-socios.js"></script>
+        <script src="js-asistencias-pagos-planes.js"></script>
+        <script src="js-turnos-perfil.js"></script>
+        <script src="js-clases-instructores.js"></script>
+        <script src="js-reportes-notificaciones.js"></script>
+        <script src="js-gestion-planes.js"></script>
+        <script src="js-email-planes-admin.js"></script>
+        <script src="js-instructor-clases.js"></script>
+    </body>
+</html>
