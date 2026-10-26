@@ -48,6 +48,7 @@ try {
 function handleGet($db) {
     $actual = requireAuth($db);
     $staff = esStaff($actual);
+    sincronizarEstadosSocios($db);
 
     // Obtener todos los socios
     if (isset($_GET['action']) && $_GET['action'] === 'all') {

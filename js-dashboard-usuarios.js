@@ -46,6 +46,9 @@ function obtenerSociosProximosVencer(dias = 7) {
     });
 }
 function updateDashboard() {
+    // Marcar como morosos a los socios vencidos ANTES de contar
+    verificarVencimientos();
+
     // Calcular estadísticas
     const sociosActivos = database.socios.filter(
         (s) => s.estado === "Activo",
@@ -57,7 +60,7 @@ function updateDashboard() {
         (a) => a.fecha === getTodayString(),
     ).length;
     const ingresosDelMes = database.pagos
-        .filter((p) => p.fecha.startsWith("2025-10"))
+        .filter((p) => p.fecha.startsWith(getTodayString().slice(0, 7)))
         .reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
     // Actualizar valores
     document.getElementById("sociosActivos").textContent = sociosActivos;
