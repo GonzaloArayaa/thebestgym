@@ -46,7 +46,12 @@ loginForm.addEventListener("submit", async (e) => {
         console.log('🔐 Intentando login para:', username);
         
         // ✅ Validar contra MySQL usando la API
-        const response = await fetch(`api/usuarios.php?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
+        // Las credenciales viajan en el cuerpo de un POST, nunca en la URL
+        const response = await fetch('api/usuarios.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'login', username, password })
+        });
         
         const result = await response.json();
         console.log('📦 Respuesta del servidor:', result);
@@ -84,7 +89,17 @@ async function showMainSystem() {
 
 async function logout() {
     console.log('🚪 Cerrando sesión...');
-    
+
+    try {
+        await fetch('api/usuarios.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'logout' })
+        });
+    } catch (error) {
+        console.error('❌ Error al cerrar la sesión en el servidor:', error);
+    }
+
     currentUser = null;
     
     // Ocultar sistema y mostrar login
@@ -100,10 +115,6 @@ async function logout() {
     if (errorDiv) {
         errorDiv.style.display = "none";
     }
-    
-    // ✅ RECARGAR usuarios desde MySQL para el próximo login
-    console.log('🔄 Recargando usuarios para próximo login...');
-    await cargarUsuariosDesdeAPI();
     
     console.log('✅ Sesión cerrada correctamente');
 }

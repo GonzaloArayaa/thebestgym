@@ -9,13 +9,7 @@
 
 require_once '../db_connection.php';
 
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
-}
+initApi();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $db = getDB();
@@ -73,13 +67,14 @@ function queryClasesGym($db, $whereExtra = '', $params = []) {
 
 /**GET - Obtener clases y turnos*/
 function handleGet($db) {
+    $actual = requireAuth($db);
+
     // Catálogo completo de clases del gym, con cupos calculados en vivo.
     // Sirve tanto para el módulo de Turnos (Recepcionista/Socio) como
     // para el módulo de Clases e Instructores (Admin/Recepcionista) y
     // el panel del Instructor: es la MISMA fuente para los tres roles.
     if (isset($_GET['action']) && ($_GET['action'] === 'all' || $_GET['action'] === 'gym')) {
         $clases = queryClasesGym($db);
-        error_log("✅ Clases GYM cargadas: " . count($clases));
         jsonResponse(['success' => true, 'data' => $clases]);
     }
 
@@ -93,6 +88,11 @@ function handleGet($db) {
     // Turnos de un socio puntual
     else if (isset($_GET['action']) && $_GET['action'] === 'mis_turnos') {
         $socio_id = intval($_GET['socio_id'] ?? 0);
+        if ($actual['rol'] === 'Socio') {
+            $socio_id = (int) $actual['socio_id'];
+        } else if (!esStaff($actual)) {
+            jsonResponse(['success' => true, 'data' => []]);
+        }
 
         $stmt = $db->prepare("
             SELECT
@@ -122,7 +122,19 @@ function handleGet($db) {
     // vean el mismo estado real al iniciar sesión, sin depender de que
     // otra pestaña/compu los tenga en memoria)
     else if (isset($_GET['action']) && $_GET['action'] === 'all_turnos') {
-        $stmt = $db->query("
+        // Recepción/administración ven todos; el socio solo los suyos;
+        // el instructor solo los de sus clases.
+        $filtro = '';
+        $params = [];
+        if ($actual['rol'] === 'Socio') {
+            $filtro = 'AND t.socio_id = ?';
+            $params = [(int) $actual['socio_id']];
+        } else if ($actual['rol'] === 'Instructor') {
+            $filtro = 'AND cg.instructor_id = ?';
+            $params = [(int) $actual['instructor_id']];
+        }
+
+        $stmt = $db->prepare("
             SELECT
                 t.id,
                 t.socio_id as socioId,
@@ -140,9 +152,10 @@ function handleGet($db) {
             INNER JOIN clases_gym cg ON t.clase_id = cg.id
             LEFT JOIN instructores i ON cg.instructor_id = i.id
             INNER JOIN socios s ON t.socio_id = s.id
-            WHERE t.estado = 'Confirmado'
+            WHERE t.estado = 'Confirmado' $filtro
             ORDER BY t.fecha DESC
         ");
+        $stmt->execute($params);
         $turnos = $stmt->fetchAll();
 
         jsonResponse(['success' => true, 'data' => $turnos]);
@@ -157,7 +170,8 @@ function handleGet($db) {
  * POST - Crear clase o reservar turno
  */
 function handlePost($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $actual = requireAuth($db);
+    $input = readJsonInput();
 
     // Reservar turno
     if (isset($input['action']) && $input['action'] === 'reservar') {
@@ -165,9 +179,32 @@ function handlePost($db) {
         $clase_id = intval($input['clase_id'] ?? 0);
         $fecha = sanitize($input['fecha'] ?? '');
 
+        // Un socio solo reserva para sí mismo; el instructor no reserva
+        if ($actual['rol'] === 'Socio') {
+            $socio_id = (int) $actual['socio_id'];
+        } else if (!esStaff($actual)) {
+            jsonResponse(['success' => false, 'message' => 'No tienes permiso para realizar esta acción'], 403);
+        }
+
         if ($socio_id <= 0 || $clase_id <= 0 || empty($fecha)) {
             jsonResponse(['success' => false, 'message' => 'Datos incompletos'], 400);
         }
+
+        if (!esFechaValida($fecha) || $fecha < date('Y-m-d')) {
+            jsonResponse(['success' => false, 'message' => 'La fecha del turno no es válida'], 400);
+        }
+
+        $stmt = $db->prepare("SELECT id FROM socios WHERE id = ?");
+        $stmt->execute([$socio_id]);
+        if (!$stmt->fetch()) {
+            jsonResponse(['success' => false, 'message' => 'Socio no encontrado'], 404);
+        }
+
+        // Cupo y reserva se verifican y se insertan en una transacción,
+        // bloqueando la clase para que dos reservas simultáneas no excedan el cupo.
+        $db->beginTransaction();
+        $stmt = $db->prepare("SELECT id FROM clases_gym WHERE id = ? FOR UPDATE");
+        $stmt->execute([$clase_id]);
 
         // Verificar que la clase existe y contar cupos ocupados en vivo
         $stmt = $db->prepare("
@@ -180,10 +217,12 @@ function handlePost($db) {
         $clase = $stmt->fetch();
 
         if (!$clase) {
+            $db->rollBack();
             jsonResponse(['success' => false, 'message' => 'Clase no encontrada'], 404);
         }
 
         if ($clase['ocupados'] >= $clase['cupo_maximo']) {
+            $db->rollBack();
             jsonResponse(['success' => false, 'message' => 'No hay cupos disponibles'], 409);
         }
 
@@ -195,6 +234,7 @@ function handlePost($db) {
         $stmt->execute([$socio_id, $clase_id]);
 
         if ($stmt->fetch()) {
+            $db->rollBack();
             jsonResponse(['success' => false, 'message' => 'Ya tienes una reserva para esta clase'], 409);
         }
 
@@ -206,6 +246,7 @@ function handlePost($db) {
         ");
         $stmt->execute([$socio_id, $clase_id, $fecha]);
         $turno_id = $db->lastInsertId();
+        $db->commit();
 
         jsonResponse([
             'success' => true,
@@ -216,6 +257,7 @@ function handlePost($db) {
 
     // Crear clase gym
     else if (isset($input['action']) && $input['action'] === 'crear_gym') {
+        requireAuth($db, ['Administrador']);
         $nombre = sanitize($input['nombre'] ?? '');
         $tipo = sanitize($input['tipo'] ?? '');
         $horario = sanitize($input['horario'] ?? '');
@@ -251,10 +293,12 @@ function handlePost($db) {
  * PUT - Actualizar clase, asignar instructor o modificar turno
  */
 function handlePut($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $actual = requireAuth($db);
+    $input = readJsonInput();
 
     // ASIGNAR INSTRUCTOR A CLASE
     if (isset($input['action']) && $input['action'] === 'asignar_instructor') {
+        requireAuth($db, ['Administrador']);
         $clase_id = intval($input['clase_id'] ?? 0);
         $instructor_id = isset($input['instructor_id']) && $input['instructor_id'] !== ''
             ? intval($input['instructor_id'])
@@ -264,7 +308,13 @@ function handlePut($db) {
             jsonResponse(['success' => false, 'message' => 'ID de clase inválido'], 400);
         }
 
-        error_log("📝 Asignando instructor $instructor_id a clase $clase_id");
+        if ($instructor_id !== null) {
+            $stmt = $db->prepare("SELECT id FROM instructores WHERE id = ? AND activo = 1");
+            $stmt->execute([$instructor_id]);
+            if (!$stmt->fetch()) {
+                jsonResponse(['success' => false, 'message' => 'Instructor no encontrado'], 404);
+            }
+        }
 
         $stmt = $db->prepare("
             UPDATE clases_gym
@@ -273,13 +323,9 @@ function handlePut($db) {
         ");
 
         if ($stmt->execute([$instructor_id, $clase_id])) {
-            error_log("✅ Instructor asignado correctamente en MySQL");
-
             $verify = $db->prepare("SELECT instructor_id FROM clases_gym WHERE id = ?");
             $verify->execute([$clase_id]);
             $result = $verify->fetch();
-
-            error_log("✅ Verificación: instructor_id = " . ($result['instructor_id'] ?? 'NULL'));
 
             jsonResponse([
                 'success' => true,
@@ -287,7 +333,6 @@ function handlePut($db) {
                 'data' => ['instructor_id' => $result['instructor_id']]
             ]);
         } else {
-            error_log("❌ Error al asignar instructor");
             jsonResponse(['success' => false, 'message' => 'Error al asignar instructor'], 500);
         }
     }
@@ -302,12 +347,21 @@ function handlePut($db) {
             jsonResponse(['success' => false, 'message' => 'Datos incompletos'], 400);
         }
 
-        $stmt = $db->prepare("SELECT socio_id, estado FROM turnos WHERE id = ?");
+        if (!esFechaValida($nueva_fecha) || $nueva_fecha < date('Y-m-d')) {
+            jsonResponse(['success' => false, 'message' => 'La fecha del turno no es válida'], 400);
+        }
+
+        $stmt = $db->prepare("SELECT socio_id, clase_id, estado FROM turnos WHERE id = ?");
         $stmt->execute([$turno_id]);
         $turno = $stmt->fetch();
 
         if (!$turno || $turno['estado'] !== 'Confirmado') {
             jsonResponse(['success' => false, 'message' => 'Turno no encontrado o ya cancelado'], 404);
+        }
+
+        // Un socio solo modifica sus propios turnos; el instructor no modifica turnos
+        if (!esStaff($actual) && !($actual['rol'] === 'Socio' && (int) $turno['socio_id'] === (int) $actual['socio_id'])) {
+            jsonResponse(['success' => false, 'message' => 'No tienes permiso para realizar esta acción'], 403);
         }
 
         // Cupos de la clase nueva calculados en vivo
@@ -323,7 +377,7 @@ function handlePut($db) {
             jsonResponse(['success' => false, 'message' => 'Clase no encontrada'], 404);
         }
 
-        if ($claseNueva['ocupados'] >= $claseNueva['cupo_maximo']) {
+        if ((int) $turno['clase_id'] !== $nueva_clase_id && $claseNueva['ocupados'] >= $claseNueva['cupo_maximo']) {
             jsonResponse(['success' => false, 'message' => 'La clase seleccionada no tiene cupos disponibles'], 409);
         }
 
@@ -345,18 +399,24 @@ function handlePut($db) {
  * DELETE - Cancelar turno
  */
 function handleDelete($db) {
+    $actual = requireAuth($db);
     $turno_id = intval($_GET['id'] ?? 0);
 
     if ($turno_id <= 0) {
         jsonResponse(['success' => false, 'message' => 'ID inválido'], 400);
     }
 
-    $stmt = $db->prepare("SELECT clase_id, estado FROM turnos WHERE id = ?");
+    $stmt = $db->prepare("SELECT socio_id, clase_id, estado FROM turnos WHERE id = ?");
     $stmt->execute([$turno_id]);
     $turno = $stmt->fetch();
 
     if (!$turno) {
         jsonResponse(['success' => false, 'message' => 'Turno no encontrado'], 404);
+    }
+
+    // Un socio solo cancela sus propios turnos; el instructor no cancela turnos
+    if (!esStaff($actual) && !($actual['rol'] === 'Socio' && (int) $turno['socio_id'] === (int) $actual['socio_id'])) {
+        jsonResponse(['success' => false, 'message' => 'No tienes permiso para realizar esta acción'], 403);
     }
 
     if ($turno['estado'] !== 'Confirmado') {
@@ -375,4 +435,3 @@ function handleDelete($db) {
 
     jsonResponse(['success' => true, 'message' => 'Turno cancelado exitosamente']);
 }
-?>

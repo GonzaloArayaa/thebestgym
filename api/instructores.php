@@ -6,13 +6,7 @@
 
 require_once '../db_connection.php';
 
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
-}
+initApi();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $db = getDB();
@@ -42,6 +36,8 @@ try {
  * GET - Obtener instructores
  */
 function handleGet($db) {
+    requireAuth($db);
+
     // Obtener todos los instructores
     if (isset($_GET['action']) && $_GET['action'] === 'all') {
         $stmt = $db->query("
@@ -103,7 +99,8 @@ function handleGet($db) {
  * POST - Crear nuevo instructor
  */
 function handlePost($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    requireAuth($db, ['Administrador']);
+    $input = readJsonInput();
     
     $usuario_id = intval($input['usuario_id'] ?? 0);
     $nombre = sanitize($input['nombre'] ?? '');
@@ -113,6 +110,10 @@ function handlePost($db) {
     
     if ($usuario_id <= 0 || empty($nombre) || empty($email)) {
         jsonResponse(['success' => false, 'message' => 'Datos incompletos'], 400);
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        jsonResponse(['success' => false, 'message' => 'El email no es válido'], 400);
     }
     
     // Verificar que el usuario existe y es instructor
@@ -144,7 +145,8 @@ function handlePost($db) {
  * PUT - Actualizar instructor
  */
 function handlePut($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    requireAuth($db, ['Administrador']);
+    $input = readJsonInput();
     
     $id = intval($input['id'] ?? 0);
     $nombre = sanitize($input['nombre'] ?? '');
@@ -173,6 +175,7 @@ function handlePut($db) {
  * DELETE - Desactivar instructor (soft delete)
  */
 function handleDelete($db) {
+    requireAuth($db, ['Administrador']);
     $id = intval($_GET['id'] ?? 0);
     
     if ($id <= 0) {
@@ -188,4 +191,3 @@ function handleDelete($db) {
         jsonResponse(['success' => false, 'message' => 'Error al desactivar instructor'], 500);
     }
 }
-?>

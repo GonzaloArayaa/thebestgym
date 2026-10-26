@@ -280,17 +280,10 @@ async function guardarNuevoSocio(e) {
             return;
         }
 
-        // ✅ PASO 3: Registrar primer pago en MySQL
-        const pagoData = {
-            socio_id: resultSocio.id,
-            monto: plan.costo,
-            metodo_pago: "Efectivo",
-            concepto: `Plan ${plan.nombre} - Alta`
-        };
+        // El pago inicial del alta ya lo registra el servidor dentro de la misma
+        // transacción que crea el socio; registrarlo de nuevo duplicaría el cobro.
 
-        await registrarPagoEnAPI(pagoData);
-
-        // ✅ PASO 4: Enviar credenciales por email (NUEVO)
+        // ✅ PASO 3: Enviar credenciales por email (NUEVO)
         let emailResponse = null;
         try {
             emailResponse = await enviarCredencialesSocioPorEmail(
