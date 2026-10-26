@@ -40,7 +40,7 @@ class EmailService {
             error_log("Error al enviar email: " . $mail->ErrorInfo);
             return [
                 'success' => false,
-                'message' => 'No se pudo enviar el email: ' . $mail->ErrorInfo
+                'message' => 'No se pudo enviar el email. Revisa la configuración SMTP.'
             ];
         }
     }
@@ -76,7 +76,7 @@ class EmailService {
             error_log("Error al enviar email: " . $mail->ErrorInfo);
             return [
                 'success' => false,
-                'message' => 'No se pudo enviar el email: ' . $mail->ErrorInfo
+                'message' => 'No se pudo enviar el email. Revisa la configuración SMTP.'
             ];
         }
     }
@@ -107,9 +107,17 @@ class EmailService {
     }
     
     /**
+     * Escapa valores antes de insertarlos en una plantilla HTML
+     */
+    private static function escapar(array $valores) {
+        return array_map(fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'), $valores);
+    }
+
+    /**
      * Plantilla HTML para credenciales de usuario
      */
     private static function plantillaCredencialesUsuario($nombre, $username, $password, $rol) {
+        [$nombre, $username, $password, $rol] = self::escapar([$nombre, $username, $password, $rol]);
         return "
         <!DOCTYPE html>
         <html>
@@ -189,6 +197,7 @@ class EmailService {
     private static function plantillaCredencialesSocio($nombre, $dni, $username, $password, $plan, $vencimiento, $costo) {
         $vencimientoFormateado = date('d/m/Y', strtotime($vencimiento));
         $costoFormateado = '$' . number_format($costo, 0, ',', '.');
+        [$nombre, $dni, $username, $password, $plan] = self::escapar([$nombre, $dni, $username, $password, $plan]);
         
         return "
         <!DOCTYPE html>

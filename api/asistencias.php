@@ -6,13 +6,7 @@
 
 require_once '../db_connection.php';
 
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
-}
+initApi();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $db = getDB();
@@ -37,25 +31,42 @@ try {
 
 /**
  * GET - Obtener asistencias
+ * Recepción y administración ven todas; un socio solo las suyas.
  */
 function handleGet($db) {
+    $actual = requireAuth($db);
+    $staff = esStaff($actual);
+    $socioPropio = $actual['rol'] === 'Socio' ? (int) $actual['socio_id'] : 0;
+
+    if (!$staff && !$socioPropio) {
+        if (isset($_GET['action']) && $_GET['action'] === 'all') {
+            jsonResponse(['success' => true, 'data' => []]);
+        }
+        jsonResponse(['success' => false, 'message' => 'No tienes permiso para realizar esta acción'], 403);
+    }
+
     // Obtener todas las asistencias con datos del socio
     if (isset($_GET['action']) && $_GET['action'] === 'all') {
-        $stmt = $db->query("
+        $stmt = $db->prepare("
             SELECT a.*, s.nombre, s.dni, s.plan, s.estado
             FROM asistencias a
             INNER JOIN socios s ON a.socio_id = s.id
+            " . ($staff ? '' : 'WHERE a.socio_id = ?') . "
             ORDER BY a.fecha DESC, a.hora DESC
             LIMIT 100
         ");
-        $asistencias = $stmt->fetchAll();
-        
-        jsonResponse(['success' => true, 'data' => $asistencias]);
+        $stmt->execute($staff ? [] : [$socioPropio]);
+
+        jsonResponse(['success' => true, 'data' => $stmt->fetchAll()]);
     }
-    
+
+    // El resto de las consultas globales son solo para recepción y administración
+    else if (isset($_GET['action']) && !$staff) {
+        jsonResponse(['success' => false, 'message' => 'No tienes permiso para realizar esta acción'], 403);
+    }
+
     // Obtener asistencias de hoy
     else if (isset($_GET['action']) && $_GET['action'] === 'hoy') {
-        $hoy = date('Y-m-d');
         $stmt = $db->prepare("
             SELECT a.*, s.nombre, s.dni
             FROM asistencias a
@@ -63,62 +74,60 @@ function handleGet($db) {
             WHERE a.fecha = ?
             ORDER BY a.hora DESC
         ");
-        $stmt->execute([$hoy]);
-        $asistencias = $stmt->fetchAll();
-        
-        jsonResponse(['success' => true, 'data' => $asistencias]);
+        $stmt->execute([date('Y-m-d')]);
+
+        jsonResponse(['success' => true, 'data' => $stmt->fetchAll()]);
     }
-    
+
     // Obtener asistencias de un socio
     else if (isset($_GET['socio_id'])) {
         $socio_id = intval($_GET['socio_id']);
+        if (!$staff && $socio_id !== $socioPropio) {
+            jsonResponse(['success' => false, 'message' => 'No tienes permiso para realizar esta acción'], 403);
+        }
+
         $stmt = $db->prepare("
-            SELECT * FROM asistencias 
-            WHERE socio_id = ? 
+            SELECT * FROM asistencias
+            WHERE socio_id = ?
             ORDER BY fecha DESC, hora DESC
             LIMIT 50
         ");
         $stmt->execute([$socio_id]);
-        $asistencias = $stmt->fetchAll();
-        
-        jsonResponse(['success' => true, 'data' => $asistencias]);
+
+        jsonResponse(['success' => true, 'data' => $stmt->fetchAll()]);
     }
-    
+
     // Obtener asistencias del mes de un socio
     else if (isset($_GET['socio_id_mes'])) {
         $socio_id = intval($_GET['socio_id_mes']);
-        $mes_actual = date('Y-m');
-        
+        if (!$staff && $socio_id !== $socioPropio) {
+            jsonResponse(['success' => false, 'message' => 'No tienes permiso para realizar esta acción'], 403);
+        }
+
         $stmt = $db->prepare("
             SELECT COUNT(*) as total
-            FROM asistencias 
+            FROM asistencias
             WHERE socio_id = ? AND DATE_FORMAT(fecha, '%Y-%m') = ?
         ");
-        $stmt->execute([$socio_id, $mes_actual]);
-        $resultado = $stmt->fetch();
-        
-        jsonResponse(['success' => true, 'data' => ['total' => $resultado['total']]]);
+        $stmt->execute([$socio_id, date('Y-m')]);
+
+        jsonResponse(['success' => true, 'data' => ['total' => $stmt->fetch()['total']]]);
     }
-    
+
     // Estadísticas de asistencias
     else if (isset($_GET['action']) && $_GET['action'] === 'stats') {
-        $hoy = date('Y-m-d');
-        $mes_actual = date('Y-m');
-        
-        // Asistencias de hoy
         $stmt = $db->prepare("SELECT COUNT(*) as total FROM asistencias WHERE fecha = ?");
-        $stmt->execute([$hoy]);
+        $stmt->execute([date('Y-m-d')]);
         $hoy_total = $stmt->fetch()['total'];
-        
-        // Asistencias del mes
+
         $stmt = $db->prepare("
-            SELECT COUNT(*) as total 
-            FROM asistencias 
+            SELECT COUNT(*) as total
+            FROM asistencias
             WHERE DATE_FORMAT(fecha, '%Y-%m') = ?
         ");
-        $stmt->execute([$mes_actual]);
+        $stmt->execute([date('Y-m')]);
         $mes_total = $stmt->fetch()['total'];
-        
+
         jsonResponse([
             'success' => true,
             'data' => [
@@ -127,53 +136,61 @@ function handleGet($db) {
             ]
         ]);
     }
-    
+
     else {
         jsonResponse(['success' => false, 'message' => 'Acción no especificada'], 400);
     }
 }
 
 /**
- * POST - Registrar asistencia
+ * POST - Registrar asistencia (recepción y administración)
  */
 function handlePost($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
-    
+    requireAuth($db, ROLES_STAFF);
+    $input = readJsonInput();
+
     $dni = sanitize($input['dni'] ?? '');
-    
-    if (empty($dni)) {
+
+    if ($dni === '') {
         jsonResponse(['success' => false, 'message' => 'DNI no proporcionado'], 400);
     }
-    
+
     // Buscar socio por DNI
-    $stmt = $db->prepare("SELECT id, nombre, estado FROM socios WHERE dni = ?");
+    $stmt = $db->prepare("SELECT id, nombre, estado, vencimiento FROM socios WHERE dni = ?");
     $stmt->execute([$dni]);
     $socio = $stmt->fetch();
-    
+
     if (!$socio) {
         jsonResponse(['success' => false, 'message' => 'Socio no encontrado'], 404);
     }
-    
-    // Verificar si el socio está activo
-    if ($socio['estado'] !== 'Activo') {
+
+    // El estado Moroso solo se calcula en el navegador, así que el servidor
+    // también verifica la fecha de vencimiento.
+    $fecha = date('Y-m-d');
+    $vencido = $socio['vencimiento'] < $fecha;
+
+    if ($socio['estado'] === 'Inactivo') {
         jsonResponse([
             'success' => false,
-            'message' => 'El socio tiene la cuota vencida. No puede ingresar.',
+            'message' => 'El socio está inactivo. No puede ingresar.',
             'data' => ['estado' => $socio['estado']]
         ], 403);
     }
-    
-    // Registrar asistencia
-    $fecha = date('Y-m-d');
+
+    if ($socio['estado'] !== 'Activo' || $vencido) {
+        jsonResponse([
+            'success' => false,
+            'message' => 'El socio tiene la cuota vencida. No puede ingresar.',
+            'data' => ['estado' => $vencido ? 'Moroso' : $socio['estado']]
+        ], 403);
+    }
+
     $hora = date('H:i:s');
-    
+
     // Verificar si ya registró asistencia hoy
-    $stmt = $db->prepare("
-        SELECT id FROM asistencias 
-        WHERE socio_id = ? AND fecha = ?
-    ");
+    $stmt = $db->prepare("SELECT id FROM asistencias WHERE socio_id = ? AND fecha = ?");
     $stmt->execute([$socio['id'], $fecha]);
-    
+
     if ($stmt->fetch()) {
         jsonResponse([
             'success' => false,
@@ -181,45 +198,39 @@ function handlePost($db) {
             'data' => ['nombre' => $socio['nombre']]
         ], 409);
     }
-    
-    // Insertar asistencia
-    $stmt = $db->prepare("
-        INSERT INTO asistencias (socio_id, fecha, hora) 
-        VALUES (?, ?, ?)
-    ");
-    
-    if ($stmt->execute([$socio['id'], $fecha, $hora])) {
-        jsonResponse([
-            'success' => true,
-            'message' => "Asistencia registrada para {$socio['nombre']}",
-            'data' => [
-                'id' => $db->lastInsertId(),
-                'socio' => $socio['nombre'],
-                'fecha' => $fecha,
-                'hora' => $hora
-            ]
-        ], 201);
-    } else {
-        jsonResponse(['success' => false, 'message' => 'Error al registrar asistencia'], 500);
-    }
+
+    $stmt = $db->prepare("INSERT INTO asistencias (socio_id, fecha, hora) VALUES (?, ?, ?)");
+    $stmt->execute([$socio['id'], $fecha, $hora]);
+
+    jsonResponse([
+        'success' => true,
+        'message' => "Asistencia registrada para {$socio['nombre']}",
+        'data' => [
+            'id' => $db->lastInsertId(),
+            'socio' => $socio['nombre'],
+            'fecha' => $fecha,
+            'hora' => $hora
+        ]
+    ], 201);
 }
 
 /**
- * DELETE - Eliminar asistencia (solo para correcciones)
+ * DELETE - Eliminar asistencia (solo administrador, para correcciones)
  */
 function handleDelete($db) {
+    requireAuth($db, ['Administrador']);
     $id = intval($_GET['id'] ?? 0);
-    
+
     if ($id <= 0) {
         jsonResponse(['success' => false, 'message' => 'ID inválido'], 400);
     }
-    
+
     $stmt = $db->prepare("DELETE FROM asistencias WHERE id = ?");
-    
-    if ($stmt->execute([$id])) {
+    $stmt->execute([$id]);
+
+    if ($stmt->rowCount() > 0) {
         jsonResponse(['success' => true, 'message' => 'Asistencia eliminada exitosamente']);
     } else {
-        jsonResponse(['success' => false, 'message' => 'Error al eliminar asistencia'], 500);
+        jsonResponse(['success' => false, 'message' => 'Asistencia no encontrada'], 404);
     }
 }
-?>

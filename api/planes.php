@@ -6,13 +6,7 @@
 
 require_once '../db_connection.php';
 
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
-}
+initApi();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $db = getDB();
@@ -42,6 +36,8 @@ try {
  * GET - Obtener planes
  */
 function handleGet($db) {
+    requireAuth($db);
+
     // Obtener todos los planes activos
     if (isset($_GET['action']) && $_GET['action'] === 'all') {
         $stmt = $db->query("
@@ -91,7 +87,8 @@ function handleGet($db) {
  * POST - Crear nuevo plan
  */
 function handlePost($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    requireAuth($db, ['Administrador']);
+    $input = readJsonInput();
     
     $nombre = sanitize($input['nombre'] ?? '');
     $duracion = intval($input['duracion'] ?? 0);
@@ -129,7 +126,8 @@ function handlePost($db) {
  * PUT - Actualizar plan
  */
 function handlePut($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    requireAuth($db, ['Administrador']);
+    $input = readJsonInput();
     
     $id = intval($input['id'] ?? 0);
     $nombre = sanitize($input['nombre'] ?? '');
@@ -141,23 +139,47 @@ function handlePut($db) {
         jsonResponse(['success' => false, 'message' => 'Datos incompletos'], 400);
     }
     
-    $stmt = $db->prepare("
-        UPDATE planes 
-        SET nombre = ?, duracion = ?, costo = ?, descripcion = ? 
-        WHERE id = ?
-    ");
-    
-    if ($stmt->execute([$nombre, $duracion, $costo, $descripcion, $id])) {
-        jsonResponse(['success' => true, 'message' => 'Plan actualizado exitosamente']);
-    } else {
-        jsonResponse(['success' => false, 'message' => 'Error al actualizar plan'], 500);
+    $stmt = $db->prepare("SELECT nombre FROM planes WHERE id = ?");
+    $stmt->execute([$id]);
+    $planActual = $stmt->fetch();
+    if (!$planActual) {
+        jsonResponse(['success' => false, 'message' => 'Plan no encontrado'], 404);
     }
+
+    $stmt = $db->prepare("SELECT id FROM planes WHERE nombre = ? AND id <> ?");
+    $stmt->execute([$nombre, $id]);
+    if ($stmt->fetch()) {
+        jsonResponse(['success' => false, 'message' => 'Ya existe un plan con ese nombre'], 409);
+    }
+
+    // Los socios guardan el plan por nombre: si se renombra hay que arrastrarlos
+    $db->beginTransaction();
+    try {
+        $stmt = $db->prepare("
+            UPDATE planes 
+            SET nombre = ?, duracion = ?, costo = ?, descripcion = ? 
+            WHERE id = ?
+        ");
+        $stmt->execute([$nombre, $duracion, $costo, $descripcion, $id]);
+
+        if ($planActual['nombre'] !== $nombre) {
+            $stmt = $db->prepare("UPDATE socios SET plan = ? WHERE plan = ?");
+            $stmt->execute([$nombre, $planActual['nombre']]);
+        }
+        $db->commit();
+    } catch (Exception $e) {
+        $db->rollBack();
+        throw $e;
+    }
+
+    jsonResponse(['success' => true, 'message' => 'Plan actualizado exitosamente']);
 }
 
 /**
  * DELETE - Desactivar plan (soft delete)
  */
 function handleDelete($db) {
+    requireAuth($db, ['Administrador']);
     $id = intval($_GET['id'] ?? 0);
     
     if ($id <= 0) {
@@ -173,4 +195,3 @@ function handleDelete($db) {
         jsonResponse(['success' => false, 'message' => 'Error al desactivar plan'], 500);
     }
 }
-?>

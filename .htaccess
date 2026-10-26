@@ -1,0 +1,22 @@
+# Seguridad (Apache / XAMPP)
+Options -Indexes
+
+# Carpetas internas: nunca deben servirse por HTTP
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(sql|vendor|\.git)(/|$) - [F,L]
+</IfModule>
+
+# Archivos de configuración, diagnóstico y código interno
+<FilesMatch "^(db_connection|email_config|EmailService|test)\.php$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "(\.(sql|md|lock|json|py|replit|example)|^\.env.*)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "same-origin"
+</IfModule>

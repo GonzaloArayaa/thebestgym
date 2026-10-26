@@ -5,18 +5,10 @@
 ob_start();
 ini_set('display_errors', '0');
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Manejar preflight request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
+require_once '../db_connection.php';
 require_once '../EmailService.php';
+
+initApi();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -28,12 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Solo recepción y administración envían credenciales
+requireAuth(getDB(), ROLES_STAFF);
+
 try {
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
     
     if (!$data) {
-        throw new Exception('Datos JSON inválidos');
+        throw new InvalidArgumentException('Datos JSON inválidos');
     }
     
     $tipo = $data['tipo'] ?? '';
@@ -43,11 +38,11 @@ try {
     $password = $data['password'] ?? '';
     
     if (empty($destinatario) || empty($nombre) || empty($username) || empty($password)) {
-        throw new Exception('Faltan campos obligatorios (destinatario, nombre, username, password)');
+        throw new InvalidArgumentException('Faltan campos obligatorios (destinatario, nombre, username, password)');
     }
     
     if (!filter_var($destinatario, FILTER_VALIDATE_EMAIL)) {
-        throw new Exception('El email destinatario no es válido');
+        throw new InvalidArgumentException('El email destinatario no es válido');
     }
     
     // Determinar tipo de email a enviar
@@ -69,7 +64,7 @@ try {
         $costo = floatval($data['costo'] ?? 0);
         
         if (empty($dni)) {
-            throw new Exception('Falta el DNI del socio');
+            throw new InvalidArgumentException('Falta el DNI del socio');
         }
         
         $resultado = EmailService::enviarCredencialesSocio(
@@ -84,21 +79,21 @@ try {
         );
         
     } else {
-        throw new Exception('Tipo de email no válido. Use "usuario" o "socio".');
+        throw new InvalidArgumentException('Tipo de email no válido. Use "usuario" o "socio".');
     }
     
     // Retornar resultado
     ob_clean();
     echo json_encode($resultado);
     
+} catch (InvalidArgumentException $e) {
+    http_response_code(400);
+    ob_clean();
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 } catch (\Throwable $e) {
     error_log("Error en enviar_email.php: " . $e->getMessage());
-    
+
     http_response_code(500);
     ob_clean();
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
+    echo json_encode(['success' => false, 'message' => 'No se pudo enviar el correo']);
 }
-?>

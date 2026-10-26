@@ -1,3 +1,24 @@
+// Si el servidor responde 401 con una sesión abierta (expiró o el usuario fue
+// desactivado), se vuelve a la pantalla de login.
+(function () {
+    const fetchOriginal = window.fetch.bind(window);
+    window.fetch = async function (...args) {
+        const response = await fetchOriginal(...args);
+        const url = String(args[0] && args[0].url ? args[0].url : args[0]);
+        if (response.status === 401 && url.startsWith('api/') && typeof currentUser !== 'undefined' && currentUser) {
+            currentUser = null;
+            document.getElementById('mainSystem').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
+            const errorDiv = document.getElementById('loginError');
+            if (errorDiv) {
+                errorDiv.textContent = 'Tu sesión expiró. Vuelve a iniciar sesión.';
+                errorDiv.style.display = 'flex';
+            }
+        }
+        return response;
+    };
+})();
+
 function generateMenu() {
     const nav = document.getElementById("sidebarNav");
     nav.innerHTML = "";
@@ -111,6 +132,7 @@ async function cargarSociosDesdeAPI() {
         if (result.success) {
             database.socios = result.data.map(socio => ({
                 ...socio,
+                fechaAlta: socio.fecha_alta || socio.fechaAlta || null,
                 fechaNacimiento: socio.fecha_nacimiento || socio.fechaNacimiento || null,
                 contactoEmergencia: {
                     nombre: socio.emergencia_nombre || '',
