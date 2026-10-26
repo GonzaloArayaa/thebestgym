@@ -160,3 +160,12 @@ function requireAuth($db, array $roles = []) {
 function esStaff(array $user) {
     return in_array($user['rol'], ROLES_STAFF, true);
 }
+
+/**
+ * Pasa a 'Moroso' a los socios 'Activo' con la cuota vencida, para que el
+ * estado guardado coincida con la fecha de vencimiento (la renovación de un
+ * pago lo vuelve a 'Activo').
+ */
+function sincronizarEstadosSocios($db) {
+    $db->exec("UPDATE socios SET estado = 'Moroso' WHERE estado = 'Activo' AND vencimiento < CURDATE()");
+}

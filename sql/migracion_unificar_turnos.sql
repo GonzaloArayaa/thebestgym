@@ -36,7 +36,7 @@ DROP TEMPORARY TABLE IF EXISTS mapeo_clases;
 CREATE TEMPORARY TABLE mapeo_clases (
     nombre_viejo VARCHAR(100) PRIMARY KEY,
     id_nuevo INT NULL
-);
+) DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 INSERT INTO mapeo_clases (nombre_viejo, id_nuevo)
 SELECT c.nombre, cg.id
 FROM (SELECT DISTINCT nombre FROM clases) c
